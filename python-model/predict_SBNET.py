@@ -5,15 +5,18 @@ import numpy as np
 
 # Force CPU usage
 device = "cpu"
-torch.cuda.is_available = lambda : False  # Force CPU mode
+torch.cuda.is_available = lambda: False  # Force CPU mode
+
+
 # Define Embedding Extraction Module
 def make_fc_1d(f_in, f_out):
     return nn.Sequential(
         nn.Linear(f_in, f_out),
         nn.BatchNorm1d(f_out),
         nn.ReLU(inplace=True),
-        nn.Dropout(p=0.5)
+        nn.Dropout(p=0.5),
     )
+
 
 class EmbedBranch(nn.Module):
     def __init__(self, feat_dim, embedding_dim):
@@ -27,6 +30,7 @@ class EmbedBranch(nn.Module):
         x = nn.functional.normalize(x)
         return x
 
+
 # Define Single-Branch Network (SBNET)
 class SBNET(nn.Module):
     def __init__(self, feat_dim, embedding_dim, n_class):
@@ -39,6 +43,8 @@ class SBNET(nn.Module):
         logits = self.logits_layer(feats)
         return feats, logits
 
+
+
 def predict(model, image_features, text_features, mode="both"):
     model.eval()
     dtype = torch.float32
@@ -48,12 +54,20 @@ def predict(model, image_features, text_features, mode="both"):
         if image_features is not None:
             if not isinstance(image_features, torch.Tensor):
                 image_features = torch.tensor(image_features, dtype=dtype)
-            image_features = image_features.unsqueeze(0) if image_features.dim() == 1 else image_features
+            image_features = (
+                image_features.unsqueeze(0)
+                if image_features.dim() == 1
+                else image_features
+            )
 
         if text_features is not None:
             if not isinstance(text_features, torch.Tensor):
                 text_features = torch.tensor(text_features, dtype=dtype)
-            text_features = text_features.unsqueeze(0) if text_features.dim() == 1 else text_features
+            text_features = (
+                text_features.unsqueeze(0)
+                if text_features.dim() == 1
+                else text_features
+            )
 
         # Concatenate features based on mode
         if mode == "both":
@@ -71,32 +85,43 @@ def predict(model, image_features, text_features, mode="both"):
 
     return pred_class, pred_probs
 
-# Load the model
-def load_model(model_path):
-    # Create a new model instance with the correct architecture
-    feat_dim = 1152  # 384 (text) + 768 (image)
-    embedding_dim = 768
-    num_classes = 2
-    
-    # Initialize the model
-    model = SBNET(feat_dim=feat_dim, embedding_dim=embedding_dim, n_class=num_classes)
-    
+def load_model(model_path, weights_only=False):
     try:
-        # Load just the state dict (weights)
-        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
-        
-        # If the saved file is already a state dict, use it directly
-        if isinstance(state_dict, dict) and all(isinstance(k, str) for k in state_dict.keys()):
-            model.load_state_dict(state_dict)
-        else:
-            raise ValueError("The model file does not contain a valid state dictionary")
-            
-        # print("Model weights loaded successfully")
-    except Exception as e:
-        print(f"Error loading model weights: {str(e)}")
-        raise e
-    
-    model.eval()
-    return model
+        if weights_only:
+            # Create a new model instance with the correct architecture
+            feat_dim = 1152  # 384 (text) + 768 (image)
+            embedding_dim = 768
+            num_classes = 2
 
-# we have a single image feature tensor `img_features`
+            # Initialize the model
+            model = SBNET(
+                feat_dim=feat_dim, embedding_dim=embedding_dim, n_class=num_classes
+            )
+
+            # Load just the state dict (weights)
+            state_dict = torch.load(model_path, map_location=torch.device("cpu"))
+
+            # If the saved file is already a state dict, use it directly
+            if isinstance(state_dict, dict) and all(
+                isinstance(k, str) for k in state_dict.keys()
+            ):
+                model.load_state_dict(state_dict)
+            else:
+                raise ValueError(
+                    "The model file does not contain a valid state dictionary"
+                )
+        else:
+            # Load the complete model (architecture + weights)
+            try:
+                model = torch.load(model_path, map_location=torch.device("cpu"))
+                print("Full model loaded successfully")
+            except Exception as e:
+                print(f"Error loading full model: {str(e)}")
+                raise e
+
+        model.eval()  # Set the model to evaluation mode
+        return model
+
+    except Exception as e:
+        print(f"Error loading model: {str(e)}")
+        raise e

@@ -13,10 +13,7 @@ from sentence_transformers import SentenceTransformer
 import torchvision.transforms as transforms
 import re
 
-# ==================================
-# 🔹 Step 1: Configure API & Setup
-# ==================================
-API_KEY = "AIzaSyD0kUwvkPMpssY---gQ8RySe0OnIQ7DAkU"  # Replace with your actual API Key
+API_KEY = "AIzaSyDO4mcq4927pjNAIv2FzVpTtaR9DbRsxxY"
 genai.configure(api_key=API_KEY)
 
 # Force CPU usage
@@ -27,9 +24,6 @@ torch.cuda.is_available = lambda : False  # Force CPU mode
 sbert_model = SentenceTransformer('all-MiniLM-L6-v2').to(device)
 model, preprocess = clip.load("ViT-L/14@336px", device=device)
 
-# ==============================
-# 🔹 Step 2: Helper Functions
-# ==============================
 def get_extension(url, response):
     """Determine the image extension from the URL or Content-Type header."""
     parsed_url = urlparse(url)
@@ -154,9 +148,6 @@ def extract_image_features(image_path):
         print(f"Error processing {image_path}: {e}")
         return [0] * 768  # CLIP's ViT-L/14 output dimension is 768
 
-# =================================================
-# 🔹 Step 3: Main Function for Feature Extraction
-# =================================================
 def process_image(url):
     """Downloads an image, extracts text and image features, and returns them."""
     

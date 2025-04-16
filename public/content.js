@@ -102,14 +102,14 @@
         }
 
         try {
-            // const result = await checkImageInappropriate(img.src);
-            const result = { isInappropriate: true, confidence: 0 };
+            const result = await checkImageInappropriate(img.src);
+            // const result = { isInappropriate: true, confidence: 0.9 };
             console.log("Processing image:", img.src, "Result:", result); // Debug log
 
             // Mark image as processed
             processedImages.add(img.src);
 
-            if (result.isInappropriate && result.confidence > -1) {
+            if (result.isInappropriate && result.confidence > 0.76) {
                 applyBlurEffect(img);
                 return {
                     url: img.src,

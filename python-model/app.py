@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from predict import predict, load_model
-from fe import process_image, cleanup_image
+from predict_DualBranch import predict, load_model
+from fe import process_image, cleanup_image, download_image, extract_text_from_image, extract_image_features, extract_text_features
 import torch
 import os
 
@@ -14,7 +14,7 @@ torch.cuda.is_available = lambda : False
 
 try:
     # Load model using the new load_model function
-    model = load_model("model.pth")
+    model = load_model("DualBranch/covid_model.pth")
     model.eval()
     print("✓ Model loaded successfully")
 except Exception as e:
@@ -26,7 +26,6 @@ def predict_image():
     try:
         if model is None:
             return jsonify({'error': 'Model not loaded properly'}), 500
-            
         data = request.get_json()
         image_url = data.get('image_url')
         
@@ -34,13 +33,17 @@ def predict_image():
             return jsonify({'error': 'No image URL provided'}), 400
 
         # Process image and get features
-        text_features, image_features = process_image(image_url)
-        
+        # text_features, image_features = process_image(image_url)
+        image_path = download_image(image_url)
+        img_features = extract_image_features(image_path)
+        text = extract_text_from_image(image_path)
+        text_features = extract_text_features(text)
+        cleanup_image(image_path)
         if text_features is None or image_features is None:
             return jsonify({'error': 'Failed to process image'}), 400
 
         # Make prediction
-        pred_class, pred_probs = predict(model, image_features, text_features, mode="both")
+        pred_class, pred_probs = predict(model, img_features, text_features, mode="both")
         
         return jsonify({
             'prediction': int(pred_class),
@@ -57,4 +60,4 @@ def predict_image():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) 
+    app.run(host='0.0.0.0', port=5000)
