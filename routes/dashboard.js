@@ -4,7 +4,39 @@ const cookieParser = require('cookie-parser');
 const User = require('../models/user');
 
 const router = express.Router();
-let dashboardImages = [];
+
+// Store images temporarily
+let storedImages = [];
+
+// Function to paginate images
+function paginateImages(images, page = 1, perPage = 10) {
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    
+    const paginatedImages = images.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(images.length / perPage);
+    
+    return {
+        images: paginatedImages,
+        currentPage: page,
+        totalPages,
+        totalImages: images.length
+    };
+}
+
+// POST route to receive images from popup
+router.post('/', authenticateToken, (req, res) => {
+    const { images } = req.body;
+    if (images && Array.isArray(images)) {
+        // Sort images by timestamp in descending order
+        storedImages = images.sort((a, b) => b.timestamp - a.timestamp);
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false, message: 'Invalid image data' });
+    }
+});
+
+// GET route to display dashboard
 router.get("/", authenticateToken, async (req, res) => {
     try {
         const tempuser = req.user;
@@ -15,6 +47,7 @@ router.get("/", authenticateToken, async (req, res) => {
                 error: "We couldn't find your user session. Please sign in again to access your dashboard. If you don't have an account yet, you can create one through the SafeScroll extension popup."
             });
         }
+
         const username = tempuser.username;
         const user = await User.findOne({ username: username });
         if (!user) {
@@ -24,6 +57,7 @@ router.get("/", authenticateToken, async (req, res) => {
                 error: "We couldn't find your account in our system. This might happen if your account was recently deleted or if there's a temporary issue. Please try signing out and signing in again through the SafeScroll extension popup. If the problem persists, you may need to create a new account."
             });
         }
+
         let isSubscribed = false;
         const { subscription } = user;
 
@@ -43,11 +77,19 @@ router.get("/", authenticateToken, async (req, res) => {
             });
         }
 
-        // For now, we'll just pass an empty array for localImages
-        // The actual implementation will need to be handled client-side
+        // Get page number from query parameter, default to 1
+        const page = parseInt(req.query.page) || 1;
+        const perPage = 10; // Number of images per page
+
+        // Paginate the stored images
+        const { images, currentPage, totalPages, totalImages } = paginateImages(storedImages, page, perPage);
+
         res.render("dashboard", { 
-            images: dashboardImages,
+            images,
             isSubscribed,
+            currentPage,
+            totalPages,
+            totalImages
         });
     } catch (error) {
         console.error("Error in GET /:", error);
@@ -58,15 +100,5 @@ router.get("/", authenticateToken, async (req, res) => {
         });
     }
 });
-
-router.post('/', (req, res) => {
-    const { images } = req.body;
-    if (images && Array.isArray(images)) {
-      dashboardImages = images;
-      res.json({ success: true });
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid image data' });
-    }
-  });
 
 module.exports = router;

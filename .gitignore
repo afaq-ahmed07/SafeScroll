@@ -1,0 +1,91 @@
+# # Python
+# __pycache__/
+# *.py[cod]
+# *$py.class
+# *.so
+# .Python
+# build/
+# develop-eggs/
+# dist/
+# downloads/
+# eggs/
+# .eggs/
+# lib/
+# lib64/
+# parts/
+# sdist/
+# var/
+# wheels/
+# *.egg-info/
+# .installed.cfg
+# *.egg
+
+# # Virtual Environment
+# venv/
+# env/
+# .venv/
+
+# # IDE
+# .idea/
+# .vscode/
+# *.swp
+# *.swo
+# .DS_Store
+
+# Logs and databases
+# *.log
+# *.sqlite3
+
+# Environment variables
+# .env
+# .env.local
+# .env.development
+# .env.production
+
+# # Node.js
+# node_modules/
+# npm-debug.log
+# yarn-debug.log
+# yarn-error.log
+# .pnp
+# .pnp.js
+
+# # Chrome Extension build
+# dist/
+# build/
+
+# # Chrome Extension development
+# chrome-debug.log
+
+# # Downloads directory (for image processing)
+# downloads/
+
+# # Model weights and checkpoints
+# *.pth
+# *.pt
+# *.ckpt
+# *.bin
+
+# # Cache files
+# .cache/
+# *.cache
+
+# # Jupyter Notebook
+# .ipynb_checkpoints
+
+# # Temporary files
+# temp/
+# tmp/
+# *.tmp
+# *.temp
+
+# # Logs
+# logs/
+# *.log
+
+# # Coverage reports
+# coverage/
+# htmlcov/
+# *.coverage
+# *.cover
+# .coverage.*

@@ -8,6 +8,12 @@
     let username = '';
     let observer = null; // Store observer reference
 
+    // Track observers for different contexts
+    const observers = {
+        body: null,
+        images: new Map() // Map of image elements to their observers
+    };
+
     // Debounce function to limit how often we send messages
     function debounce(func, wait) {
         let timeout;
@@ -163,6 +169,45 @@
         }
     }, 3000); // Wait 3 seconds before sending
 
+    // Function to create and manage observers
+    function createObserver(target, config) {
+        const observer = new MutationObserver(handleMutations);
+        observer.observe(target, config);
+        return observer;
+    }
+
+    // Function to safely disconnect and clean up an observer
+    function cleanupObserver(observer) {
+        if (observer) {
+            try {
+                observer.disconnect();
+                return true;
+            } catch (error) {
+                console.error('Error disconnecting observer:', error);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Function to cleanup all observers
+    function cleanupAllObservers() {
+        // Cleanup body observer
+        if (observers.body) {
+            cleanupObserver(observers.body);
+            observers.body = null;
+        }
+
+        // Cleanup image-specific observers
+        for (const [img, observer] of observers.images) {
+            cleanupObserver(observer);
+        }
+        observers.images.clear();
+
+        // Clear window state
+        window.observerInitialized = false;
+    }
+
     // Function to handle mutations
     async function handleMutations(mutations) {
         const newImageElements = [];
@@ -201,47 +246,42 @@
         console.log("Starting observer initialization");
         
         try {
-            // Only proceed if we haven't initialized or if the observer is null
-            if (!window.observerInitialized || !observer) {
-                // Process initial images
-                const initialImages = await processAndCollectImages();
-                console.log("Initial images processed:", initialImages);
+            // Cleanup any existing observers
+            cleanupAllObservers();
 
-                if (initialImages.length > 0 && isSubscribed) {
-                    initialImages.forEach(image => imageBatch.add(image));
-                    sendBatchedImages();
-                }
+            // Process initial images
+            const initialImages = await processAndCollectImages();
+            console.log("Initial images processed:", initialImages);
 
-                // Create and configure the observer
-                console.log("Creating new MutationObserver");
-                observer = new MutationObserver(handleMutations);
-                
-                if (!observer) {
-                    throw new Error("Failed to create MutationObserver");
-                }
-                
-                console.log("Observer created successfully:", observer);
+            if (initialImages.length > 0 && isSubscribed) {
+                initialImages.forEach(image => imageBatch.add(image));
+                sendBatchedImages();
+            }
 
-                // Start observing changes in the entire document body
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true,
+            // Create body observer
+            observers.body = createObserver(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['src']
+            });
+
+            // Create image-specific observers
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                const imgObserver = createObserver(img, {
                     attributes: true,
                     attributeFilter: ['src']
                 });
+                observers.images.set(img, imgObserver);
+            });
 
-                window.observerInitialized = true;
-                console.log("Observer initialized and started successfully");
-                return true;
-            } else {
-                console.log("Observer already exists and is initialized:", observer);
-                return true;
-            }
+            window.observerInitialized = true;
+            console.log("Observer initialized successfully");
+            return true;
         } catch (error) {
             console.error("Error in initializeObserver:", error);
-            // Reset states on error
-            window.observerInitialized = false;
-            observer = null;
+            cleanupAllObservers();
             return false;
         }
     }
@@ -258,7 +298,7 @@
         if (startMessageReceived && isReady) {
             console.log("Starting initialization process");
             const success = await initializeObserver();
-            console.log("Initialization completed, success:", success, "Observer state:", observer);
+            console.log("Initialization completed, success:", success, "Observer state:", observers);
         } else {
             console.log("Conditions not met for initialization:",
                       "startMessageReceived:", startMessageReceived,
@@ -273,15 +313,15 @@
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === "startImageGrabbing") {
             console.log("Received startImageGrabbing message");
-            console.log("Current observer state before start:", observer);
+            console.log("Current observer state before start:", observers);
             startMessageReceived = true;
             isSubscribed = message.isSubscribed;
             username = message.username;
             
             // Handle initialization asynchronously
             handleInitialization().then(() => {
-                if (observer) {
-                    console.log("Final observer state after initialization:", observer);
+                if (observers.body) {
+                    console.log("Final observer state after initialization:", observers);
                     sendResponse({ status: "success", message: "Image grabbing started successfully" });
                 } else {
                     console.log("Observer not initialized properly");
@@ -295,54 +335,28 @@
             return true; // Keep the message channel open for async response
         } else if (message.action === "stopImageCollection") {
             console.log("Received stopImageCollection message");
-            console.log("Current observer state:", observer);
-            console.log("Window observer initialized state:", window.observerInitialized);
             
             try {
-                // Stop the observer if it exists
-                if (observer) {
-                    console.log("Observer exists, attempting to disconnect");
-                    observer.disconnect();
-                    console.log("Observer disconnected successfully");
-                    observer = null;
-                } else {
-                    console.log("No active observer found to disconnect");
-                }
-
+                // Cleanup all observers
+                cleanupAllObservers();
+                
                 // Remove blur effects from all images
-                console.log("Removing blur effects from images");
                 removeAllBlurEffects();
-
-                // Clear any pending batched images
-                if (imageBatch.size > 0) {
-                    console.log("Clearing pending image batch:", imageBatch.size, "images");
-                    imageBatch.clear();
-                }
-
-                // Clear any pending debounce timeouts
-                if (typeof sendBatchedImages.cancel === 'function') {
-                    console.log("Canceling pending batch send");
-                    sendBatchedImages.cancel();
-                }
-
-                // Reset initialization flags
-                window.observerInitialized = false;
-                startMessageReceived = false;
-
-                // Clear processed images set to allow fresh start if collection resumes
-                console.log("Clearing processed images set:", processedImages.size, "images");
+                
+                // Clear batch and processed images
+                imageBatch.clear();
                 processedImages.clear();
-
-                console.log("Image collection stopped successfully");
+                
+                // Reset flags
+                startMessageReceived = false;
+                
                 sendResponse({ status: "success", message: "Image collection stopped successfully" });
             } catch (error) {
                 console.error("Error stopping image collection:", error);
-                console.error("Observer state during error:", observer);
-                console.error("Window observer state during error:", window.observerInitialized);
-                sendResponse({ status: "error", message: "Failed to stop image collection: " + error.message });
+                sendResponse({ status: "error", message: "Failed to stop image collection" });
             }
             
-            return true; // Keep the message channel open for async response
+            return true;
         }
     });
 

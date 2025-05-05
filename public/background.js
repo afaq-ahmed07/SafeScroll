@@ -79,7 +79,8 @@ function isSupportedUrl(url) {
         url.includes('pinterest.com') || 
         url.includes('unsplash.com') ||
         url.includes('pexels.com') ||
-        url.includes('reddit.com')
+        url.includes('reddit.com') ||
+        url.includes('copyhackers.com')
     );
 }
 
@@ -226,7 +227,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     openTab(logoutUrl, sendResponse);
   } else if (message.action === 'manage') {
     openTab(manageUrl, sendResponse);
-  } else if (message.action === "startImageCollection") {
+  } else if (message.action === 'startImageCollection') {
     isSubscribed = message.isSubscribed;
     username = message.username;
     isLoggedIn = true;
@@ -270,6 +271,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ status: "error", error: "Invalid image data received" });
     }
   } else if (message.action === "stopImageCollection") {
+    console.log("Stopping image collection in all tabs");
     stopAllImageCollection().then(() => {
       sendResponse({ status: "success", message: "Collection stopped in all tabs" });
     }).catch(error => {

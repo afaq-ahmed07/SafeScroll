@@ -23,7 +23,8 @@
         "https://*.pinterest.com/*",
         "https://*.unsplash.com/*",
         "https://*.pexels.com/*",
-        "https://*.reddit.com/*"
+        "https://*.reddit.com/*",
+        "https://copyhackers.com/*"
       ],
       "js": ["content.js"]
     }
