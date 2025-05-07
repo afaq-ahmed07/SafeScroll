@@ -13,6 +13,8 @@ from sentence_transformers import SentenceTransformer
 import torchvision.transforms as transforms
 import re
 from dotenv import load_dotenv
+import time
+import random
 load_dotenv()
 
 API_KEY = os.getenv('GOOGLE_API_KEY')
@@ -59,22 +61,29 @@ def cleanup_image(filepath):
         print(f"Error cleaning up image {filepath}: {e}")
 
 def download_image(url, save_dir="downloads"):
-    """Download an image from the URL and save it with the correct extension."""
-    response = requests.get(url, stream=True)
+    """Download an image from the URL and save it with a unique filename."""
+    response = requests.get(url, stream=True, timeout=10)  # Add timeout
 
     if response.status_code == 200:
-        os.makedirs(save_dir, exist_ok=True)  # Ensure save directory exists
+        # print(f"Downloading image: {url}")
+        os.makedirs(save_dir, exist_ok=True)
 
         ext = get_extension(url, response)
-        filename = f"downloaded_image{ext}"
+        # Use timestamp and random number for unique filename
+        unique_id = f"{int(time.time())}_{random.randint(1000, 9999)}"
+        filename = f"image_{unique_id}{ext}"
         save_path = os.path.join(save_dir, filename)
-
-        with open(save_path, 'wb') as file:
-            for chunk in response.iter_content(1024):
-                file.write(chunk)
-
-        # print(f"Image downloaded successfully: {save_path}")
-        return save_path  # Return the saved image path
+        # print(f"Saving image to: {save_path}")
+        try:
+            with open(save_path, 'wb') as file:
+                for chunk in response.iter_content(chunk_size=8192):  # Increased chunk size
+                    if chunk:  # Filter out keep-alive chunks
+                        file.write(chunk)
+            return save_path
+        except Exception as e:
+            print(f"Error saving image: {e}")
+            cleanup_image(save_path)
+            return None
     else:
         print(f"Failed to download image. HTTP Status: {response.status_code}")
         return None
@@ -154,14 +163,13 @@ def extract_image_features(image_path):
 
 def process_image(url):
     """Downloads an image, extracts text and image features, and returns them."""
-    
-    # Step 1: Download image
-    image_path = download_image(url)
-
-    if not image_path:
-        return None, None  # Return None if image download failed
-
+    image_path = None
     try:
+        # Step 1: Download image
+        image_path = download_image(url)
+        if not image_path:
+            return None, None
+
         # Step 2: Extract text
         extracted_text = extract_text_from_image(image_path)
 
@@ -172,14 +180,15 @@ def process_image(url):
         text_features = extract_text_features(processed_text)
         image_features = extract_image_features(image_path)
 
-        # Clean up the downloaded image
-        cleanup_image(image_path)
-
         return text_features, image_features
 
     except Exception as e:
         print(f"Error processing image: {e}")
-        # Clean up in case of error
-        cleanup_image(image_path)
         return None, None
-
+    finally:
+        # Always clean up in a finally block
+        if image_path and os.path.exists(image_path):
+            try:
+                cleanup_image(image_path)
+            except Exception as e:
+                print(f"Error during cleanup: {e}")

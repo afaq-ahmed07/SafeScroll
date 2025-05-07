@@ -24,7 +24,8 @@
         "https://*.unsplash.com/*",
         "https://*.pexels.com/*",
         "https://*.reddit.com/*",
-        "https://copyhackers.com/*"
+        "https://copyhackers.com/*",
+        "http://127.0.0.1:5500/index.html"
       ],
       "js": ["content.js"]
     }

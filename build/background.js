@@ -80,7 +80,8 @@ function isSupportedUrl(url) {
         url.includes('unsplash.com') ||
         url.includes('pexels.com') ||
         url.includes('reddit.com') ||
-        url.includes('copyhackers.com')
+        url.includes('copyhackers.com')||
+        url.includes('http://127.0.0.1:5500/index.html')
     );
 }
 

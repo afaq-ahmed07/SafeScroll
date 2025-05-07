@@ -7,6 +7,7 @@
     let isSubscribed = false;
     let username = '';
     let observer = null; // Store observer reference
+    let isProcessingEnabled = true;
 
     // Track observers for different contexts
     const observers = {
@@ -82,6 +83,7 @@
 
     // Function to process an image element
     async function processImageElement(img) {
+        if(!isProcessingEnabled) return null;
         // Skip if already processed or invalid URL
         if (!img.src || !img.src.startsWith('http') || processedImages.has(img.src)) {
             return null;
@@ -108,8 +110,8 @@
         }
 
         try {
-            // const result = await checkImageInappropriate(img.src);
-            const result = { isInappropriate: true, confidence: 0.9 };
+            const result = await checkImageInappropriate(img.src);
+            // const result = { isInappropriate: true, confidence: 0.9 };
             console.log("Processing image:", img.src, "Result:", result); // Debug log
 
             // Mark image as processed
@@ -210,6 +212,7 @@
 
     // Function to handle mutations
     async function handleMutations(mutations) {
+        if(!isProcessingEnabled) return;
         const newImageElements = [];
 
         mutations.forEach(mutation => {
@@ -318,6 +321,7 @@
             isSubscribed = message.isSubscribed;
             username = message.username;
             
+            
             // Handle initialization asynchronously
             handleInitialization().then(() => {
                 if (observers.body) {
@@ -335,6 +339,7 @@
             return true; // Keep the message channel open for async response
         } else if (message.action === "stopImageCollection") {
             console.log("Received stopImageCollection message");
+            isProcessingEnabled = false;
             
             try {
                 // Cleanup all observers

@@ -132,7 +132,7 @@ def predict(model, img_features=None, text_features=None, mode="both"):
         mode (str): One of "both", "image", or "text" to determine which modality to use.
         
     Returns:
-        torch.Tensor: Prediction probabilities
+        tuple: (prediction_class, prediction_probabilities)
     """
     if not isinstance(model, HatefulMemeDetector):
         raise ValueError("Model must be an instance of HatefulMemeDetector")
@@ -148,24 +148,27 @@ def predict(model, img_features=None, text_features=None, mode="both"):
     elif mode == "text" and text_features is None:
         raise ValueError("Text features are required for mode='text'")
     
-    # Process features
-    if img_features is not None:
-        img_features = torch.tensor(img_features, dtype=torch.float32).unsqueeze(0)
-    if text_features is not None:
-        text_features = torch.tensor(text_features, dtype=torch.float32).unsqueeze(0)
+    # Convert features to tensors if they're not already
+    img_features = torch.tensor(img_features, dtype=torch.float32).to(device) if img_features is not None else None
+    text_features = torch.tensor(text_features, dtype=torch.float32).to(device) if text_features is not None else None
     
-    # Move to device
-    device = torch.device("cpu")  # Force CPU usage
-    if img_features is not None:
-        img_features = img_features.to(device)
-    if text_features is not None:
-        text_features = text_features.to(device)
+    # Add batch dimension if missing
+    if img_features is not None and len(img_features.shape) == 1:
+        img_features = img_features.unsqueeze(0)
+    if text_features is not None and len(text_features.shape) == 1:
+        text_features = text_features.unsqueeze(0)
     
-    # Get prediction
+    # Get model predictions
     with torch.no_grad():
-        output = model(img_features, text_features, mode)
-    predicted_class = torch.argmax(output, dim=1).item()
-    return predicted_class, output
+        logits = model(img_features, text_features, mode)
+        
+        # Convert to probabilities
+        probs = logits.squeeze().cpu().numpy()  # Convert to numpy array
+        
+        # Get predicted class (argmax)
+        pred_class = np.argmax(probs)
+        
+        return pred_class, probs
 
 # if __name__ == "__main__":
 #     # Example usage
