@@ -86,67 +86,67 @@ class HatefulMemeDetector(nn.Module):
         logits = self.classifier(fused)
         return logits
 
+# Default model parameters (these will be overridden by the saved model)
 embed_dim = 768  # Embedding dimension
 img_feat_dim = 768
-text_feat_dim = 384
 num_classes = 2
+text_feat_dim = 384
 
-def load_model(model_path, device="cpu"):
-    """
-    Load a pre-trained model from a saved checkpoint.
+# def load_model(model_path, device="cpu"):
+#     """
+#     Load a pre-trained model from a saved checkpoint.
     
-    Args:
-        model_path (str): Path to the saved model checkpoint
-        device (str): Device to load the model on ("cpu" or "cuda")
+#     Args:
+#         model_path (str): Path to the saved model checkpoint
+#         device (str): Device to load the model on ("cpu" or "cuda")
         
-    Returns:
-        nn.Module: Loaded model
-    """
-    # Create model instance
-    model = HatefulMemeDetector(
-        img_feat_dim=img_feat_dim,
-        text_feat_dim=text_feat_dim,
-        embed_dim=embed_dim,
-        num_classes=num_classes,
-        fusion_type="gated"
-    )
-    
-    # Load state dictionary
-    try:
-        state_dict = torch.load(model_path, map_location=torch.device(device))
-        model.load_state_dict(state_dict)
-        model.to(device)
-        model.eval()  # Set to evaluation mode
-        return model
-    except Exception as e:
-        raise RuntimeError(f"Failed to load model: {str(e)}")
+#     Returns:
+#         nn.Module: Loaded model
+#     """
+#     try:
+#         # Load the state dict first to determine the correct dimensions
+#         state_dict = torch.load(model_path, map_location=torch.device(device))
+        
+#         # Get the correct dimensions from the state dict
+#         text_branch_weight = state_dict.get('text_branch.fc.0.weight')
+#         if text_branch_weight is not None:
+#             text_feat_dim = text_branch_weight.shape[1]  # Get input dimension
+#         else:
+#             text_feat_dim = 384  # Default if not found
+        
+#         # Create model instance with correct dimensions
+#         model = HatefulMemeDetector(
+#             img_feat_dim=img_feat_dim,
+#             text_feat_dim=text_feat_dim,
+#             embed_dim=embed_dim,
+#             num_classes=num_classes,
+#             fusion_type="gated"
+#         )
+        
+#         # Load state dictionary
+#         model.load_state_dict(state_dict)
+#         model.to(device)
+#         model.eval()  # Set to evaluation mode
+#         return model
+#     except Exception as e:
+#         raise RuntimeError(f"Failed to load model: {str(e)}")
 
-def predict(model, img_features=None, text_features=None, mode="both"):
+def predict_combined(model_paths, img_features=None, text_features=None, mode="both"):
     """
-    Make a prediction using the HatefulMemeDetector model.
+    Make predictions using multiple models and combine their results.
+    Returns 1 if any model predicts hateful content, otherwise returns 0.
     
     Args:
-        model (nn.Module): The trained model.
+        model_paths (list): List of paths to model checkpoints
         img_features (torch.Tensor, optional): Tensor containing image features. Default is None.
         text_features (torch.Tensor, optional): Tensor containing text features. Default is None.
         mode (str): One of "both", "image", or "text" to determine which modality to use.
         
     Returns:
-        tuple: (prediction_class, prediction_probabilities)
+        tuple: (final_prediction, individual_predictions)
     """
-    if not isinstance(model, HatefulMemeDetector):
-        raise ValueError("Model must be an instance of HatefulMemeDetector")
-    
-    if mode not in ["both", "image", "text"]:
-        raise ValueError(f"Invalid mode: {mode}. Must be 'both', 'image', or 'text'")
-    
-    # Check if required features are provided
-    if mode == "both" and (img_features is None or text_features is None):
-        raise ValueError("Both image and text features are required for mode='both'")
-    elif mode == "image" and img_features is None:
-        raise ValueError("Image features are required for mode='image'")
-    elif mode == "text" and text_features is None:
-        raise ValueError("Text features are required for mode='text'")
+    if not isinstance(model_paths, list):
+        raise ValueError("model_paths must be a list of model paths")
     
     # Convert features to tensors if they're not already
     img_features = torch.tensor(img_features, dtype=torch.float32).to(device) if img_features is not None else None
@@ -158,37 +158,39 @@ def predict(model, img_features=None, text_features=None, mode="both"):
     if text_features is not None and len(text_features.shape) == 1:
         text_features = text_features.unsqueeze(0)
     
-    # Get model predictions
-    with torch.no_grad():
-        logits = model(img_features, text_features, mode)
-        
-        # Convert to probabilities
-        probs = logits.squeeze().cpu().numpy()  # Convert to numpy array
-        
-        # Get predicted class (argmax)
-        pred_class = np.argmax(probs)
-        
-        return pred_class, probs
-
-# if __name__ == "__main__":
-#     # Example usage
-#     model = load_model("DualBranch/covid_model.pth")
+    # Initialize predictions list
+    all_predictions = []
     
-#     # Process your image and text features
-#     image_url = "https://i.imgflip.com/3o0zf4.jpg"
-#     image_path = download_image(image_url)
+    # Process each model
+    for model_path in model_paths:
+        try:
+            model = HatefulMemeDetector(
+                img_feat_dim=img_feat_dim,
+                text_feat_dim=text_feat_dim,
+                embed_dim=embed_dim,
+                num_classes=num_classes,
+                fusion_type="gated"
+            )
+            
+            # Load model
+            state_dict = torch.load(model_path, map_location=torch.device(device))
+            model.load_state_dict(state_dict)
+            model.to(device)
+            model.eval()
+            
+            # Get prediction
+            with torch.no_grad():
+                logits = model(img_features, text_features, mode)
+                probs = logits.squeeze().cpu().numpy()
+                pred_class = np.argmax(probs)
+                
+            all_predictions.append((pred_class, probs))
+            
+        except Exception as e:
+            print(f"Error processing model {model_path}: {str(e)}")
+            all_predictions.append((None, None))
     
-#     if image_path:
-#         # Extract features using the correct functions
-#         img_features = extract_image_features(image_path)
-#         text = extract_text_from_image(image_path)
-#         text_features = extract_text_features(text)
-#         print(img_features, text_features)
-#         # Clean up the downloaded image
-#         cleanup_image(image_path)
-        
-#         # Make prediction
-#         prediction = predict(model, img_features, text_features)
-#         print(f"Prediction: {prediction}")
-#     else:
-#         print("Failed to download image")
+    # Determine final prediction - return 1 if any model predicted hateful content
+    final_prediction = 1 if any(pred[0] == 1 for pred in all_predictions if pred[0] is not None) else 0
+    
+    return final_prediction, all_predictions

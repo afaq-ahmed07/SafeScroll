@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,24 +18,24 @@
             margin-bottom: 2rem;
             border-radius: 10px;
         }
-        
+
         .dashboard-header h1 {
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 1rem;
         }
-        
+
         .dashboard-header p {
             opacity: 0.9;
         }
-        
+
         .image-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
             margin-top: 2rem;
         }
-        
+
         .image-card {
             background: white;
             border-radius: 15px;
@@ -42,21 +43,21 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease;
         }
-        
+
         .image-card:hover {
             transform: translateY(-5px);
         }
-        
+
         .image-card img {
             width: 100%;
             height: 200px;
             object-fit: cover;
         }
-        
+
         .image-card .card-body {
             padding: 1.5rem;
         }
-        
+
         .image-card .status-badge {
             display: inline-block;
             padding: 0.5rem 1rem;
@@ -64,43 +65,43 @@
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
-        
+
         .status-hateful {
             background: #ff4d4d;
             color: white;
         }
-        
+
         .status-safe {
             background: #4caf50;
             color: white;
         }
-        
+
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
             background: #f8f9fa;
             border-radius: 10px;
         }
-        
+
         .empty-state i {
             font-size: 4rem;
             color: #6c757d;
             margin-bottom: 1rem;
         }
-        
+
         .pagination {
             margin-top: 2rem;
         }
-        
+
         .page-item.active .page-link {
             background-color: #4361ee;
             border-color: #4361ee;
         }
-        
+
         .page-link {
             color: #4361ee;
         }
-        
+
         .no-image-placeholder {
             background-color: #f8f9fa;
             border-radius: 15px 15px 0 0;
@@ -111,30 +112,30 @@
             align-items: center;
             color: #6c757d;
         }
-        
+
         .no-image-placeholder i {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
         }
-        
+
         .no-image-placeholder p {
             margin: 0;
             font-size: 0.9rem;
         }
-        
+
         @media (max-width: 768px) {
             .dashboard-header h1 {
                 font-size: 2rem;
             }
-            
+
             .image-card img {
                 height: 150px;
             }
-            
+
             .image-grid {
                 grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             }
-            
+
             .no-image-placeholder {
                 height: 150px;
             }
@@ -151,39 +152,75 @@
                 <p>Track and manage detected images</p>
             </div>
         </div>
-
-        <!-- Main Content -->
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-white bg-primary mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Images</h5>
+                            <p class="card-text display-6">
+                                <%= stats.totalImages %>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-white bg-danger mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Hateful Images</h5>
+                            <p class="card-text display-6">
+                                <%= stats.hatefulCount %>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-white bg-success mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Safe Images</h5>
+                            <p class="card-text display-6">
+                                <%= stats.nonHatefulCount %>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="container">
             <!-- Image Grid -->
             <div class="image-grid">
-                <% if (images && images.length > 0) { %>
-                    <% images.forEach(image => { %>
+                <% if (images && images.length> 0) { %>
+                    <% images.forEach(image=> { %>
                         <div class="image-card">
                             <% if (image.url && image.url.startsWith('http')) { %>
-                                <img src="<%= image.url %>" alt="Detected image" class="img-fluid" onerror="this.style.display='none'">
-                            <% } else { %>
-                                <div class="no-image-placeholder d-flex flex-column justify-content-center align-items-center h-100">
-                                    <i class="fas fa-exclamation-triangle text-warning" style="font-size: 2.5rem;"></i>
-                                    <p class="text-muted mt-2">Image URL not supported</p>
-                                </div>
-                            <% } %>
-                            <div class="card-body">
-                                <div class="status-badge <%= image.isHateful ? 'status-hateful' : 'status-safe' %>">
-                                    <%= image.isHateful ? 'Hateful' : 'Safe' %>
-                                </div>
-                                <p class="text-muted mb-0">
-                                    Detected: <%= new Date(image.timestamp).toLocaleString() %>
-                                </p>
-                            </div>
+                                <img src="<%= image.url %>" alt="Detected image" class="img-fluid"
+                                    onerror="this.style.display='none'">
+                                <% } else { %>
+                                    <div
+                                        class="no-image-placeholder d-flex flex-column justify-content-center align-items-center h-100">
+                                        <i class="fas fa-exclamation-triangle text-warning"
+                                            style="font-size: 2.5rem;"></i>
+                                        <p class="text-muted mt-2">Image URL not supported</p>
+                                    </div>
+                                    <% } %>
+                                        <div class="card-body">
+                                            <div
+                                                class="status-badge <%= image.isHateful ? 'status-hateful' : 'status-safe' %>">
+                                                <%= image.isHateful ? 'Hateful' : 'Safe' %>
+                                            </div>
+                                            <p class="text-muted mb-0">
+                                                Detected: <%= new Date(image.timestamp).toLocaleString() %>
+                                            </p>
+                                        </div>
                         </div>
-                    <% }); %>
-                <% } else { %>
-                    <div class="empty-state">
-                        <i class="fas fa-image"></i>
-                        <h3>No images detected</h3>
-                        <p class="text-muted">No images have been detected in the last 24 hours.</p>
-                    </div>
-                <% } %>
+                        <% }); %>
+                            <% } else { %>
+                                <div class="empty-state">
+                                    <i class="fas fa-image"></i>
+                                    <h3>No images detected</h3>
+                                    <p class="text-muted">No images have been detected in the last 24 hours.</p>
+                                </div>
+                                <% } %>
             </div>
 
             <!-- Pagination -->
@@ -195,42 +232,46 @@
                                 <i class="fas fa-chevron-left"></i>
                             </a>
                         </li>
-                        <% 
-                        const pagesToShow = 15;
-                        let startPage = Math.max(1, Math.min(currentPage - Math.floor(pagesToShow/2), totalPages - pagesToShow + 1));
-                        let endPage = Math.min(startPage + pagesToShow - 1, totalPages);
-                        if (startPage > 1) {
+                        <% const pagesToShow=15; let startPage=Math.max(1, Math.min(currentPage -
+                            Math.floor(pagesToShow/2), totalPages - pagesToShow + 1)); let endPage=Math.min(startPage +
+                            pagesToShow - 1, totalPages); if (startPage> 1) {
                             %>
                             <li class="page-item">
                                 <a class="page-link" href="/dashboard?page=1">1</a>
                             </li>
-                            <% if (startPage > 2) { %>
-                            <li class="page-item disabled">
-                                <a class="page-link">...</a>
-                            </li>
-                            <% } %>
-                        <% } %>
-                        <% for(let i = startPage; i <= endPage; i++) { %>
-                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                <a class="page-link" href="/dashboard?page=<%= i %>"><%= i %></a>
-                            </li>
-                        <% } %>
-                        <% if (endPage < totalPages) {
-                            if (endPage < totalPages - 1) { %>
-                            <li class="page-item disabled">
-                                <a class="page-link">...</a>
-                            </li>
-                            <% } %>
-                            <li class="page-item">
-                                <a class="page-link" href="/dashboard?page=<%= totalPages %>"><%= totalPages %></a>
-                            </li>
-                        <% } %>
-                        %>
-                        <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="/dashboard?page=<%= currentPage + 1 %>">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
+                            <% if (startPage> 2) { %>
+                                <li class="page-item disabled">
+                                    <a class="page-link">...</a>
+                                </li>
+                                <% } %>
+                                    <% } %>
+                                        <% for(let i=startPage; i <=endPage; i++) { %>
+                                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                                <a class="page-link" href="/dashboard?page=<%= i %>">
+                                                    <%= i %>
+                                                </a>
+                                            </li>
+                                            <% } %>
+                                                <% if (endPage < totalPages) { if (endPage < totalPages - 1) { %>
+                                                    <li class="page-item disabled">
+                                                        <a class="page-link">...</a>
+                                                    </li>
+                                                    <% } %>
+                                                        <li class="page-item">
+                                                            <a class="page-link"
+                                                                href="/dashboard?page=<%= totalPages %>">
+                                                                <%= totalPages %>
+                                                            </a>
+                                                        </li>
+                                                        <% } %>
+                                                            %>
+                                                            <li
+                                                                class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                                                                <a class="page-link"
+                                                                    href="/dashboard?page=<%= currentPage + 1 %>">
+                                                                    <i class="fas fa-chevron-right"></i>
+                                                                </a>
+                                                            </li>
                     </ul>
                 </nav>
             </div>
@@ -240,4 +281,5 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

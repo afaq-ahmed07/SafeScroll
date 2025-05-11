@@ -1,4 +1,5 @@
 (function () {
+    
     // Add this at the beginning of content.js
     console.log('Content script loaded');
 
@@ -6,7 +7,6 @@
     const processedImages = new Set();
     let isSubscribed = false;
     let username = '';
-    let observer = null; // Store observer reference
     let isProcessingEnabled = true;
 
     // Track observers for different contexts
@@ -110,8 +110,8 @@
         }
 
         try {
-            const result = await checkImageInappropriate(img.src);
-            // const result = { isInappropriate: true, confidence: 0.9 };
+            // const result = await checkImageInappropriate(img.src);
+            const result = { isInappropriate: true, confidence: 0.9 };
             console.log("Processing image:", img.src, "Result:", result); // Debug log
 
             // Mark image as processed

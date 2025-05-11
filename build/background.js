@@ -11,7 +11,7 @@ let activeTabsWithCollection = new Set(); // Track tabs with active collection
 async function storeImagesLocally(images, username) {
   try {
     console.log('Attempting to store images:', images.length, 'for user:', username);
-    
+
     // Get existing stored images
     const result = await chrome.storage.local.get('storedImages');
     const storedImages = result.storedImages || [];
@@ -36,7 +36,7 @@ async function storeImagesLocally(images, username) {
     await chrome.storage.local.set({ storedImages: updatedImages });
 
     console.log('Successfully stored images. Total count:', updatedImages.length);
-    
+
     // Verify storage
     const verification = await chrome.storage.local.get('storedImages');
     console.log('Verification - stored images count:', verification.storedImages.length);
@@ -67,146 +67,144 @@ async function cleanupExpiredImages() {
     console.error('Error cleaning up expired images:', error);
   }
 }
-
-// Set up periodic cleanup (every hour)
-setInterval(cleanupExpiredImages, 60 * 60 * 1000);
+cleanupExpiredImages();
 
 // Function to check if URL is supported
 function isSupportedUrl(url) {
-    return url && (
-        url.includes('facebook.com') || 
-        url.includes('instagram.com') || 
-        url.includes('pinterest.com') || 
-        url.includes('unsplash.com') ||
-        url.includes('pexels.com') ||
-        url.includes('reddit.com') ||
-        url.includes('copyhackers.com')||
-        url.includes('http://127.0.0.1:5500/index.html')
-    );
+  return url && (
+    url.includes('facebook.com') ||
+    url.includes('instagram.com') ||
+    url.includes('pinterest.com') ||
+    url.includes('unsplash.com') ||
+    url.includes('pexels.com') ||
+    url.includes('reddit.com') ||
+    url.includes('copyhackers.com') ||
+    url.includes('http://127.0.0.1:5500/index.html')
+  );
 }
 
 // Function to start image collection in a tab
 async function startImageCollection(tabId, url) {
-    if (!isSupportedUrl(url)) {
-        console.log("URL not supported:", url);
-        return;
+  if (!isSupportedUrl(url)) {
+    console.log("URL not supported:", url);
+    return;
+  }
+
+  try {
+    // Check if the tab still exists and has the same URL
+    const tab = await chrome.tabs.get(tabId);
+    console.log("Tab:", tab);
+    if (!tab || tab.url !== url) {
+      console.log("Tab no longer exists or URL has changed");
+      return;
     }
 
+    // Inject content script if not already injected
     try {
-        // Check if the tab still exists and has the same URL
-        const tab = await chrome.tabs.get(tabId);
-        console.log("Tab:", tab);
-        if (!tab || tab.url !== url) {
-            console.log("Tab no longer exists or URL has changed");
-            return;
-        }
-
-        // Inject content script if not already injected
-        try {
-            await chrome.scripting.executeScript({
-                target: { tabId },
-                files: ['content.js']
-            });
-        } catch (error) {
-            console.error("Script injection failed:", error);
-            return;
-        }
-
-        // Start image collection with retry mechanism
-        let retries = 3;
-        while (retries > 0) {
-            try {
-                await new Promise((resolve, reject) => {
-                    chrome.tabs.sendMessage(tabId, { 
-                        action: "startImageGrabbing", 
-                        isSubscribed: isSubscribed, 
-                        username: username 
-                    }, (response) => {
-                        if (chrome.runtime.lastError) {
-                            reject(chrome.runtime.lastError);
-                        } else {
-                            resolve(response);
-                        }
-                    });
-                });
-                // If successful, add to tracking and break the retry loop
-                activeTabsWithCollection.add(tabId);
-                console.log("Started collection in tab:", tabId, "URL:", url);
-                break;
-            } catch (error) {
-                retries--;
-                if (retries > 0) {
-                    console.log(`Retrying... ${retries} attempts left`);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                } else {
-                    throw error;
-                }
-            }
-        }
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content.js']
+      });
     } catch (error) {
-        console.error("Error starting collection in tab:", tabId, error);
-        // Remove from tracking if there was an error
-        activeTabsWithCollection.delete(tabId);
+      console.error("Script injection failed:", error);
+      return;
     }
+
+    // Start image collection with retry mechanism
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await new Promise((resolve, reject) => {
+          chrome.tabs.sendMessage(tabId, {
+            action: "startImageGrabbing",
+            isSubscribed: isSubscribed,
+            username: username
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(response);
+            }
+          });
+        });
+        // If successful, add to tracking and break the retry loop
+        activeTabsWithCollection.add(tabId);
+        console.log("Started collection in tab:", tabId, "URL:", url);
+        break;
+      } catch (error) {
+        retries--;
+        if (retries > 0) {
+          console.log(`Retrying... ${retries} attempts left`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          throw error;
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error starting collection in tab:", tabId, error);
+    // Remove from tracking if there was an error
+    activeTabsWithCollection.delete(tabId);
+  }
 }
 
 // Function to stop image collection in a tab
 async function stopImageCollection(tabId) {
-    console.log("Attempting to stop collection in tab:", tabId);
+  console.log("Attempting to stop collection in tab:", tabId);
 
-    try {
-        // Check if the tab exists before attempting to stop collection
-        const tab = await chrome.tabs.get(tabId).catch(() => null);
-        if (!tab) {
-            console.log("Tab no longer exists, cleaning up state for:", tabId);
-            activeTabsWithCollection.delete(tabId);
-            return;
-        }
-
-        // Try to send stop message to content script
-        try {
-            await new Promise((resolve, reject) => {
-                chrome.tabs.sendMessage(tabId, { action: "stopImageCollection" }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        // If there's an error (like content script not loaded), just cleanup state
-                        console.log("Content script not accessible in tab:", tabId);
-                        resolve();
-                    } else {
-                        console.log("Successfully stopped collection in tab:", tabId);
-                        resolve(response);
-                    }
-                });
-            });
-        } catch (error) {
-            console.log("Error sending stop message to content script:", error);
-        }
-
-        // Always clean up the tracking state
-        activeTabsWithCollection.delete(tabId);
-        if (tabId === lastActiveTabId) {
-            lastActiveTabId = null;
-        }
-
-        console.log("Cleanup completed for tab:", tabId);
-        console.log("Remaining active tabs:", Array.from(activeTabsWithCollection));
-
-    } catch (error) {
-        console.error("Error in stopImageCollection:", error);
-        // Ensure cleanup even if there's an error
-        activeTabsWithCollection.delete(tabId);
+  try {
+    // Check if the tab exists before attempting to stop collection
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    if (!tab) {
+      console.log("Tab no longer exists, cleaning up state for:", tabId);
+      activeTabsWithCollection.delete(tabId);
+      return;
     }
+
+    // Try to send stop message to content script
+    try {
+      await new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(tabId, { action: "stopImageCollection" }, (response) => {
+          if (chrome.runtime.lastError) {
+            // If there's an error (like content script not loaded), just cleanup state
+            console.log("Content script not accessible in tab:", tabId);
+            resolve();
+          } else {
+            console.log("Successfully stopped collection in tab:", tabId);
+            resolve(response);
+          }
+        });
+      });
+    } catch (error) {
+      console.log("Error sending stop message to content script:", error);
+    }
+
+    // Always clean up the tracking state
+    activeTabsWithCollection.delete(tabId);
+    if (tabId === lastActiveTabId) {
+      lastActiveTabId = null;
+    }
+
+    console.log("Cleanup completed for tab:", tabId);
+    console.log("Remaining active tabs:", Array.from(activeTabsWithCollection));
+
+  } catch (error) {
+    console.error("Error in stopImageCollection:", error);
+    // Ensure cleanup even if there's an error
+    activeTabsWithCollection.delete(tabId);
+  }
 }
 
 // Function to stop collection in all tabs
 async function stopAllImageCollection() {
-    const tabsToStop = Array.from(activeTabsWithCollection);
-    console.log("Tabs to stop:", tabsToStop);
-    await Promise.all(tabsToStop.map(tabId => stopImageCollection(tabId)));
-    
-    // Clear all tracking states
-    activeTabsWithCollection.clear();
-    lastActiveTabId = null;
-    console.log("Collection stopped in all tabs");
+  const tabsToStop = Array.from(activeTabsWithCollection);
+  console.log("Tabs to stop:", tabsToStop);
+  await Promise.all(tabsToStop.map(tabId => stopImageCollection(tabId)));
+
+  // Clear all tracking states
+  activeTabsWithCollection.clear();
+  lastActiveTabId = null;
+  console.log("Collection stopped in all tabs");
 }
 
 // Listen for messages from the server
@@ -366,119 +364,119 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 
 // Listen for tab activation
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    console.log("Tab switching from:", lastActiveTabId, "to:", activeInfo.tabId);
-    
-    try {
-        // First, stop collection in the previous tab if it exists
-        if (lastActiveTabId && lastActiveTabId !== activeInfo.tabId) {
-            console.log("Stopping collection in previous tab:", lastActiveTabId);
-            await stopImageCollection(lastActiveTabId);
-        }
+  console.log("Tab switching from:", lastActiveTabId, "to:", activeInfo.tabId);
 
-        // Check checkbox state after stopping previous collection
-        const { checkboxState } = await chrome.storage.local.get("checkboxState");
-        console.log("Tab activated:", activeInfo.tabId, "Checkbox state:", checkboxState);
-        
-        if (!checkboxState) {
-            console.log("Checkbox is unchecked, no new collection will start");
-            return;
-        }
-
-        // Get complete tab information for the new tab using activeInfo.tabId
-        const tab = await chrome.tabs.get(activeInfo.tabId);
-        console.log("Active tab info:", tab);
-
-        // Wait for tab to be fully loaded
-        if (!tab || !tab.url || tab.status !== 'complete') {
-            console.log("Tab not ready yet, waiting for load completion");
-            return;
-        }
-        
-        console.log("Switching to tab with URL:", tab.url);
-
-        // Update last active tab
-        lastActiveTabId = activeInfo.tabId;
-
-        // Start collection in new tab if URL is supported
-        if (isSupportedUrl(tab.url)) {
-            console.log("Starting collection in new tab:", activeInfo.tabId);
-            
-            try {
-                // Get current subscription status
-                const response = await fetch('http://localhost:3000/popup', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-                isSubscribed = data.isSubscribed;
-                username = data.username;
-                
-                console.log("Updated subscription status:", { isSubscribed, username });
-
-                // Ensure content script is loaded and initialized
-                await chrome.scripting.executeScript({
-                    target: { tabId: activeInfo.tabId },
-                    files: ['content.js']
-                });
-                
-                // Wait a moment for the content script to initialize
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Start the collection
-                await startImageCollection(activeInfo.tabId, tab.url);
-            } catch (error) {
-                console.error("Error during collection setup:", error);
-            }
-        } else {
-            console.log("New tab URL not supported:", tab.url);
-        }
-    } catch (error) {
-        console.error("Error during tab switch:", error);
-        // Ensure lastActiveTabId is updated even if there's an error
-        lastActiveTabId = activeInfo.tabId;
+  try {
+    // First, stop collection in the previous tab if it exists
+    if (lastActiveTabId && lastActiveTabId !== activeInfo.tabId) {
+      console.log("Stopping collection in previous tab:", lastActiveTabId);
+      await stopImageCollection(lastActiveTabId);
     }
+
+    // Check checkbox state after stopping previous collection
+    const { checkboxState } = await chrome.storage.local.get("checkboxState");
+    console.log("Tab activated:", activeInfo.tabId, "Checkbox state:", checkboxState);
+
+    if (!checkboxState) {
+      console.log("Checkbox is unchecked, no new collection will start");
+      return;
+    }
+
+    // Get complete tab information for the new tab using activeInfo.tabId
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    console.log("Active tab info:", tab);
+
+    // Wait for tab to be fully loaded
+    if (!tab || !tab.url || tab.status !== 'complete') {
+      console.log("Tab not ready yet, waiting for load completion");
+      return;
+    }
+
+    console.log("Switching to tab with URL:", tab.url);
+
+    // Update last active tab
+    lastActiveTabId = activeInfo.tabId;
+
+    // Start collection in new tab if URL is supported
+    if (isSupportedUrl(tab.url)) {
+      console.log("Starting collection in new tab:", activeInfo.tabId);
+
+      try {
+        // Get current subscription status
+        const response = await fetch('http://localhost:3000/popup', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        isSubscribed = data.isSubscribed;
+        username = data.username;
+
+        console.log("Updated subscription status:", { isSubscribed, username });
+
+        // Ensure content script is loaded and initialized
+        await chrome.scripting.executeScript({
+          target: { tabId: activeInfo.tabId },
+          files: ['content.js']
+        });
+
+        // Wait a moment for the content script to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Start the collection
+        await startImageCollection(activeInfo.tabId, tab.url);
+      } catch (error) {
+        console.error("Error during collection setup:", error);
+      }
+    } else {
+      console.log("New tab URL not supported:", tab.url);
+    }
+  } catch (error) {
+    console.error("Error during tab switch:", error);
+    // Ensure lastActiveTabId is updated even if there's an error
+    lastActiveTabId = activeInfo.tabId;
+  }
 });
 
 // Listen for URL changes
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    // Only proceed if we have a complete URL and the tab is fully loaded
-    if (!tab.url) return;
+  // Only proceed if we have a complete URL and the tab is fully loaded
+  if (!tab.url) return;
 
-    console.log("Tab updated:", tabId, "Status:", changeInfo.status, "URL:", tab.url);
+  console.log("Tab updated:", tabId, "Status:", changeInfo.status, "URL:", tab.url);
 
-    // If this is a loading status update
-    if (changeInfo.status === 'complete') {
-        const { checkboxState } = await chrome.storage.local.get("checkboxState");
-        console.log("Tab load completed:", tabId, "URL:", tab.url, "Checkbox state:", checkboxState);
+  // If this is a loading status update
+  if (changeInfo.status === 'complete') {
+    const { checkboxState } = await chrome.storage.local.get("checkboxState");
+    console.log("Tab load completed:", tabId, "URL:", tab.url, "Checkbox state:", checkboxState);
 
-        if (!checkboxState) {
-            await stopImageCollection(tabId);
-            return;
-        }
-
-        // Handle URL change in any tab that's being tracked or is the active tab
-        if (activeTabsWithCollection.has(tabId) || tabId === lastActiveTabId) {
-            if (isSupportedUrl(tab.url)) {
-                console.log("Starting collection after tab load:", tab.url);
-                try {
-                    // Get current subscription status
-                    const response = await fetch('http://localhost:3000/popup', {
-                        credentials: 'include'
-                    });
-                    const data = await response.json();
-                    isSubscribed = data.isSubscribed;
-                    username = data.username;
-                    
-                    console.log("Updated subscription status:", { isSubscribed, username });
-
-                    // Start collection
-                    await startImageCollection(tabId, tab.url);
-                } catch (error) {
-                    console.error("Error starting collection after tab load:", error);
-                }
-            } else {
-                console.log("Stopping collection - URL not supported:", tab.url);
-                await stopImageCollection(tabId);
-            }
-        }
+    if (!checkboxState) {
+      await stopImageCollection(tabId);
+      return;
     }
+
+    // Handle URL change in any tab that's being tracked or is the active tab
+    if (activeTabsWithCollection.has(tabId) || tabId === lastActiveTabId) {
+      if (isSupportedUrl(tab.url)) {
+        console.log("Starting collection after tab load:", tab.url);
+        try {
+          // Get current subscription status
+          const response = await fetch('http://localhost:3000/popup', {
+            credentials: 'include'
+          });
+          const data = await response.json();
+          isSubscribed = data.isSubscribed;
+          username = data.username;
+
+          console.log("Updated subscription status:", { isSubscribed, username });
+
+          // Start collection
+          await startImageCollection(tabId, tab.url);
+        } catch (error) {
+          console.error("Error starting collection after tab load:", error);
+        }
+      } else {
+        console.log("Stopping collection - URL not supported:", tab.url);
+        await stopImageCollection(tabId);
+      }
+    }
+  }
 });

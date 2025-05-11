@@ -12,15 +12,35 @@ let storedImages = [];
 function paginateImages(images, page = 1, perPage = 10) {
     const startIndex = (page - 1) * perPage;
     const endIndex = startIndex + perPage;
-    
+
     const paginatedImages = images.slice(startIndex, endIndex);
     const totalPages = Math.ceil(images.length / perPage);
-    
+
     return {
         images: paginatedImages,
         currentPage: page,
         totalPages,
         totalImages: images.length
+    };
+}
+
+function calculateImageStatistics(images) {
+    let totalImages = images.length;
+    let hatefulCount = 0;
+    let nonHatefulCount = 0;
+
+    images.forEach(img => {
+        if (img.isHateful) {
+            hatefulCount++;
+        } else {
+            nonHatefulCount++;
+        }
+    });
+
+    return {
+        totalImages,
+        hatefulCount,
+        nonHatefulCount
     };
 }
 
@@ -81,15 +101,18 @@ router.get("/", authenticateToken, async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const perPage = 10; // Number of images per page
 
+        const stats = calculateImageStatistics(storedImages);
+
         // Paginate the stored images
         const { images, currentPage, totalPages, totalImages } = paginateImages(storedImages, page, perPage);
 
-        res.render("dashboard", { 
+        res.render("dashboard", {
             images,
             isSubscribed,
             currentPage,
             totalPages,
-            totalImages
+            totalImages,
+            stats
         });
     } catch (error) {
         console.error("Error in GET /:", error);
