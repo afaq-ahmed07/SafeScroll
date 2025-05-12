@@ -110,8 +110,8 @@
         }
 
         try {
-            // const result = await checkImageInappropriate(img.src);
-            const result = { isInappropriate: true, confidence: 0.9 };
+            const result = await checkImageInappropriate(img.src);
+            // const result = { isInappropriate: true, confidence: 0.9 };
             console.log("Processing image:", img.src, "Result:", result); // Debug log
 
             // Mark image as processed

@@ -48,7 +48,7 @@ router.post("/verify-otp", async (req, res) => {
             });
         }
         // Check if the token is expired
-        const currentTimestamp = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+        const currentTimestamp = Math.floor(Date.now() / 1000);
         if (decodedToken.exp < currentTimestamp) {
             return res.status(400).json({
                 error_message: "OTP expired.",
@@ -116,12 +116,12 @@ router.post("/resend-otp", async (req, res) => {
         const { email, username, password } = req.body;
         // Generate a new OTP
         const otp = Math.floor(1000 + Math.random() * 9000);
-        const otpExpiry = Date.now() + 70000; // 70 seconds
+        const otpExpiry = Date.now() + 90000; // 90 seconds
         // Sign a new token
         let newTempToken;
         try {
             const tempUserData = { otp, otpExpiry };
-            newTempToken = jwt.sign(tempUserData, 'Nevergiveup', { expiresIn: '70s' });
+            newTempToken = jwt.sign(tempUserData, 'Nevergiveup', { expiresIn: '90s' });
         } catch (error) {
             console.error("Error generating new token:", error);
             return res.status(500).json({
@@ -134,7 +134,7 @@ router.post("/resend-otp", async (req, res) => {
             service: 'Gmail',
             auth: {
                 user: 'f219298@cfd.nu.edu.pk', // Use an app password
-                pass: 'lucky031671660371#'     // Replace with a Gmail app password
+                pass: 'toja swko fidh mtyy'     // Replace with a Gmail app password
             },
             tls: { rejectUnauthorized: false }
         });

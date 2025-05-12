@@ -192,7 +192,7 @@
                 <% if (images && images.length> 0) { %>
                     <% images.forEach(image=> { %>
                         <div class="image-card">
-                            <% if (image.url && image.url.startsWith('http')) { %>
+                            <% if (image.url && (image.url.startsWith('http') || image.url.startsWith('https'))) { %>
                                 <img src="<%= image.url %>" alt="Detected image" class="img-fluid"
                                     onerror="this.style.display='none'">
                                 <% } else { %>

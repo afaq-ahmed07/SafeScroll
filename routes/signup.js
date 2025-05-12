@@ -58,7 +58,7 @@ router.post("/", authenticateToken, async (req, res) => {
             service: 'Gmail',
             auth: {
                 user: 'f219298@cfd.nu.edu.pk',
-                pass: 'lucky031671660371#'
+                pass: 'toja swko fidh mtyy'
             },
             tls: { rejectUnauthorized: false }
         });

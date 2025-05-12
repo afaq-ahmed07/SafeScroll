@@ -1,6 +1,5 @@
 const express = require("express");
 const authenticateToken = require('../middlewares/auth');
-const cookieParser = require('cookie-parser');
 const User = require('../models/user');
 
 const router = express.Router();
