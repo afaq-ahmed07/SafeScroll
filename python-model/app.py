@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from predict_DualBranch import predict_combined
-from fe import process_image, cleanup_image, download_image, extract_text_from_image, extract_image_features, extract_text_features
+from fe import process_image, cleanup_image
 import torch
 import os
+import hashlib
+
 
 app = Flask(__name__)
 CORS(app)
@@ -12,11 +14,11 @@ CORS(app)
 device = "cpu"
 torch.cuda.is_available = lambda : False
 
-# Model parameters - these must match what was used during training
 embed_dim = 768  # Embedding dimension
 img_feat_dim = 768
 text_feat_dim = 384
 num_classes = 2
+prediction_cache = {}
 
 # Load both models
 try:
@@ -30,7 +32,7 @@ try:
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model not found at {model_path}")
     
-    print(f"✓ Models loaded successfully from: {model_paths}")
+    print(f"Models loaded successfully from: {model_paths}")
 except Exception as e:
     print(f"Error loading models: {str(e)}")
     model_paths = None
@@ -43,11 +45,16 @@ def predict_image():
             
         data = request.get_json()
         image_url = data.get('image_url')
-        print(image_url)
-        
         if not image_url:
             return jsonify({'error': 'No image URL provided'}), 400
-
+        
+        image_hash = hashlib.sha256(image_url.encode()).hexdigest()
+        
+        # Check cache first
+        if image_hash in prediction_cache:
+            print("Returning cached result.")
+            return jsonify(prediction_cache[image_hash])
+        
         # Process image and get features
         text_features, image_features = process_image(image_url)
         if text_features is None or image_features is None:
@@ -70,8 +77,7 @@ def predict_image():
         
         # Calculate overall confidence as maximum of individual confidences
         overall_confidence = max(confidence_scores) if confidence_scores else 0.0
-        
-        return jsonify({
+        result={
             'prediction': int(final_pred),
             'probabilities': probabilities,
             'is_inappropriate': bool(final_pred == 1),
@@ -88,7 +94,11 @@ def predict_image():
                     'confidence': float(individual_preds[1][1][1]) if individual_preds[1][1] is not None else 0.0
                 }
             ]
-        })
+        }
+
+        prediction_cache[image_hash] = result
+        
+        return jsonify(result)
 
     except Exception as e:
         print("Error during prediction:", e)

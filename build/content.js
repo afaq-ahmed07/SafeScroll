@@ -8,6 +8,7 @@
     let isSubscribed = false;
     let username = '';
     let isProcessingEnabled = true;
+    const BATCH_SIZE = 5;
 
     // Track observers for different contexts
     const observers = {
@@ -81,6 +82,47 @@
         }
     }
 
+    // Batch of images to be sent
+    let imageBatch = new Set();
+    let batchTimer = null;
+
+    // Function to send batched images
+    function sendBatchedImages() {
+        if (imageBatch.size > 0) {
+            const imagesToSend = Array.from(imageBatch);
+            console.log("Sending batch to background:", imagesToSend); // Debug log
+
+            chrome.runtime.sendMessage({
+                action: "newImages",
+                images: imagesToSend,
+                username: username
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error('Error sending images:', chrome.runtime.lastError);
+                } else {
+                    console.log(`Successfully sent ${imagesToSend.length} images`);
+                }
+            });
+
+            imageBatch.clear();
+        }
+    }
+
+    // Function to schedule batch sending
+    function scheduleBatchSend() {
+        // Clear any existing timer
+        if (batchTimer) {
+            clearTimeout(batchTimer);
+        }
+        
+        // Schedule the next send
+        batchTimer = setTimeout(() => {
+            sendBatchedImages();
+            // Schedule the next check after 3 seconds
+            batchTimer = setTimeout(scheduleBatchSend, 3000);
+        }, 5000);
+    }
+
     // Function to process an image element
     async function processImageElement(img) {
         if(!isProcessingEnabled) return null;
@@ -105,7 +147,7 @@
         // Check image dimensions
         if (img.naturalWidth < 50 || img.naturalHeight < 50) {
             console.log(`Skipping small image: ${img.src} (${img.naturalWidth}x${img.naturalHeight})`);
-            processedImages.add(img.src); // Mark as processed to avoid rechecking
+            processedImages.add(img.src);
             return null;
         }
 
@@ -117,19 +159,26 @@
             // Mark image as processed
             processedImages.add(img.src);
 
+            // Add to batch and trigger sending
+            imageBatch.add({
+                url: img.src,
+                isInappropriate: result.isInappropriate,
+                confidence: result.confidence
+            });
+            
+            // Start sending batches if not already started
+            if (!batchTimer && isSubscribed) {
+                scheduleBatchSend();
+            }
+
             if (result.isInappropriate && result.confidence > 0.76) {
                 applyBlurEffect(img);
-                return {
-                    url: img.src,
-                    isInappropriate: true,
-                    confidence: result.confidence,
-                };
             }
 
             return {
                 url: img.src,
-                isInappropriate: false,
-                confidence: result.confidence,
+                isInappropriate: result.isInappropriate,
+                confidence: result.confidence
             };
         } catch (error) {
             console.error('Error processing image:', error);
@@ -145,31 +194,6 @@
         );
         return processedResults.filter(result => result !== null);
     }
-
-    // Batch of images to be sent
-    let imageBatch = new Set();
-
-    // Function to send batched images
-    const sendBatchedImages = debounce(() => {
-        if (imageBatch.size > 0) {
-            const imagesToSend = Array.from(imageBatch);
-            console.log("Sending batch to background:", imagesToSend); // Debug log
-
-            chrome.runtime.sendMessage({
-                action: "newImages",
-                images: imagesToSend,
-                username: username
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error('Error sending images:', chrome.runtime.lastError);
-                } else {
-                    console.log(`Successfully sent ${imagesToSend.length} images`);
-                }
-            });
-
-            imageBatch.clear();
-        }
-    }, 3000); // Wait 3 seconds before sending
 
     // Function to create and manage observers
     function createObserver(target, config) {
@@ -239,8 +263,9 @@
         console.log("New processed images:", validResults); // Debug log
 
         if (validResults.length > 0 && isSubscribed) {
-            validResults.forEach(result => imageBatch.add(result));
-            sendBatchedImages();
+            // validResults.forEach(result => imageBatch.add(result));
+            // console.log("Sending images to back")
+            // sendBatchedImages();
         }
     }
 
@@ -257,8 +282,8 @@
             console.log("Initial images processed:", initialImages);
 
             if (initialImages.length > 0 && isSubscribed) {
-                initialImages.forEach(image => imageBatch.add(image));
-                sendBatchedImages();
+                // initialImages.forEach(image => imageBatch.add(image));
+                // sendBatchedImages();
             }
 
             // Create body observer

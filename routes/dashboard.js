@@ -47,9 +47,25 @@ function calculateImageStatistics(images) {
 router.post('/', authenticateToken, (req, res) => {
     const { images } = req.body;
     if (images && Array.isArray(images)) {
+        // Create a Set to track unique URLs
+        const uniqueUrls = new Set();
+        
+        // Filter out duplicate images
+        const uniqueImages = images.filter((image) => {
+            if (uniqueUrls.has(image.url)) {
+                return false; // Skip if URL is already in Set
+            }
+            uniqueUrls.add(image.url);
+            return true;
+        });
+
         // Sort images by timestamp in descending order
-        storedImages = images.sort((a, b) => b.timestamp - a.timestamp);
-        res.json({ success: true });
+        storedImages = uniqueImages.sort((a, b) => b.timestamp - a.timestamp);
+        
+        res.json({ 
+            success: true,
+            message: `Successfully processed ${uniqueImages.length} unique images out of ${images.length}`
+        });
     } else {
         res.status(400).json({ success: false, message: 'Invalid image data' });
     }

@@ -67,7 +67,6 @@ async function cleanupExpiredImages() {
     console.error('Error cleaning up expired images:', error);
   }
 }
-cleanupExpiredImages();
 
 // Function to check if URL is supported
 function isSupportedUrl(url) {
@@ -221,6 +220,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === 'opensigninPage') {
     openTab(signinUrl, sendResponse);
   } else if (message.action === 'openDashboard') {
+    cleanupExpiredImages();
     openTab(dashboardUrl, sendResponse);
   } else if (message.action === 'logout') {
     openTab(logoutUrl, sendResponse);
