@@ -1,10 +1,10 @@
 (function () {
     
-    // Add this at the beginning of content.js
     console.log('Content script loaded');
 
     // Track processed images
     const processedImages = new Set();
+    const checkedImages = new Set(); // Track images that have been checked
     let isSubscribed = false;
     let username = '';
     let isProcessingEnabled = true;
@@ -16,18 +16,18 @@
         images: new Map() // Map of image elements to their observers
     };
 
-    // Debounce function to limit how often we send messages
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
+    // // Debounce function to limit how often we send messages
+    // function debounce(func, wait) {
+    //     let timeout;
+    //     return function executedFunction(...args) {
+    //         const later = () => {
+    //             clearTimeout(timeout);
+    //             func(...args);
+    //         };
+    //         clearTimeout(timeout);
+    //         timeout = setTimeout(later, wait);
+    //     };
+    // }
 
     // Add blur effect to images
     function applyBlurEffect(imgElement) {
@@ -58,6 +58,12 @@
     // Function to check if an image is inappropriate using the Flask API
     async function checkImageInappropriate(imageUrl) {
         try {
+            // Skip if image has already been checked
+            if (checkedImages.has(imageUrl)) {
+                console.log(`Skipping already checked image: ${imageUrl}`);
+                return { isInappropriate: false, confidence: 0 };
+            }
+
             const response = await fetch('http://127.0.0.1:5000/predict', {
                 method: 'POST',
                 headers: {
@@ -72,12 +78,18 @@
 
             const data = await response.json();
             console.log("API Response:", data); // Debug log
+            
+            // Mark image as checked after successful response
+            checkedImages.add(imageUrl);
+            
             return {
                 isInappropriate: data.is_inappropriate,
                 confidence: data.confidence
             };
         } catch (error) {
             console.error('Error checking image:', error);
+            // Even on error, mark as checked to avoid retrying
+            checkedImages.add(imageUrl);
             return { isInappropriate: false, confidence: 0 };
         }
     }
@@ -118,9 +130,9 @@
         // Schedule the next send
         batchTimer = setTimeout(() => {
             sendBatchedImages();
-            // Schedule the next check after 3 seconds
-            batchTimer = setTimeout(scheduleBatchSend, 3000);
-        }, 5000);
+            // Schedule the next check after 10 seconds
+            batchTimer = setTimeout(scheduleBatchSend, 10000);
+        }, 10000);
     }
 
     // Function to process an image element
@@ -158,6 +170,9 @@
 
             // Mark image as processed
             processedImages.add(img.src);
+            if (result==null){
+                return null;
+            }
 
             // Add to batch and trigger sending
             imageBatch.add({
