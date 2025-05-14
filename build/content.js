@@ -159,17 +159,17 @@
             // Mark image as processed
             processedImages.add(img.src);
 
-            // Add to batch and trigger sending
-            imageBatch.add({
-                url: img.src,
-                isInappropriate: result.isInappropriate,
-                confidence: result.confidence
-            });
+            // // Add to batch and trigger sending
+            // imageBatch.add({
+            //     url: img.src,
+            //     isInappropriate: result.isInappropriate,
+            //     confidence: result.confidence
+            // });
             
             // Start sending batches if not already started
-            if (!batchTimer && isSubscribed) {
-                scheduleBatchSend();
-            }
+            // if (!batchTimer && isSubscribed) {
+            //     scheduleBatchSend();
+            // }
 
             if (result.isInappropriate && result.confidence > 0.76) {
                 applyBlurEffect(img);
@@ -263,9 +263,9 @@
         console.log("New processed images:", validResults); // Debug log
 
         if (validResults.length > 0 && isSubscribed) {
-            // validResults.forEach(result => imageBatch.add(result));
-            // console.log("Sending images to back")
-            // sendBatchedImages();
+            validResults.forEach(result => imageBatch.add(result));
+            console.log("Sending images to back")
+            sendBatchedImages();
         }
     }
 

@@ -52,40 +52,51 @@ def get_extension(url, response):
     return ext
 
 def cleanup_image(filepath):
-    """Clean up downloaded image file."""
+    """Clean up downloaded image file with proper error handling."""
     try:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            # print(f"Cleaned up image: {filepath}")
+        if filepath and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+                # print(f"Successfully cleaned up image: {filepath}")
+            except OSError as e:
+                print(f"Error removing {filepath}: {e}")
+                # Try to close any open file handles
+                try:
+                    with open(filepath, 'rb') as f:
+                        f.close()
+                    os.remove(filepath)
+                except:
+                    print(f"Failed to clean up {filepath} after closing handles")
     except Exception as e:
-        print(f"Error cleaning up image {filepath}: {e}")
+        print(f"Unexpected error in cleanup: {e}")
 
 def download_image(url, save_dir="downloads"):
     """Download an image from the URL and save it with a unique filename."""
-    response = requests.get(url, stream=True, timeout=10)  # Add timeout
-
-    if response.status_code == 200:
-        # print(f"Downloading image: {url}")
-        os.makedirs(save_dir, exist_ok=True)
-
-        ext = get_extension(url, response)
-        # Use timestamp and random number for unique filename
-        unique_id = f"{int(time.time())}_{random.randint(1000, 9999)}"
-        filename = f"image_{unique_id}{ext}"
-        save_path = os.path.join(save_dir, filename)
-        # print(f"Saving image to: {save_path}")
-        try:
-            with open(save_path, 'wb') as file:
-                for chunk in response.iter_content(chunk_size=8192):  # Increased chunk size
-                    if chunk:  # Filter out keep-alive chunks
-                        file.write(chunk)
-            return save_path
-        except Exception as e:
-            print(f"Error saving image: {e}")
-            cleanup_image(save_path)
+    try:
+        response = requests.get(url, stream=True, timeout=10)
+        
+        if response.status_code == 200:
+            os.makedirs(save_dir, exist_ok=True)
+            ext = get_extension(url, response)
+            unique_id = f"{int(time.time())}_{random.randint(1000, 9999)}"
+            filename = f"image_{unique_id}{ext}"
+            save_path = os.path.join(save_dir, filename)
+            
+            try:
+                with open(save_path, 'wb') as file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            file.write(chunk)
+                return save_path
+            except Exception as e:
+                print(f"Error saving image: {e}")
+                cleanup_image(save_path)
+                return None
+        else:
+            print(f"Failed to download image. HTTP Status: {response.status_code}")
             return None
-    else:
-        print(f"Failed to download image. HTTP Status: {response.status_code}")
+    except Exception as e:
+        print(f"Error downloading image: {e}")
         return None
 
 def encode_image(image_path):
@@ -150,6 +161,10 @@ def extract_text_features(text):
 def extract_image_features(image_path):
     """Extracts image features using CLIP."""
     try:
+        if not os.path.exists(image_path):
+            print(f"Image file not found: {image_path}")
+            return [0] * 768
+            
         image = Image.open(image_path).convert("RGB")
         image = preprocess(image).unsqueeze(0).to(device)
 
@@ -159,7 +174,8 @@ def extract_image_features(image_path):
         return image_features.cpu().numpy().flatten().tolist()
     except Exception as e:
         print(f"Error processing {image_path}: {e}")
-        return [0] * 768  # CLIP's ViT-L/14 output dimension is 768
+        cleanup_image(image_path)  # Clean up if processing fails
+        return [0] * 768
 
 def process_image(url):
     """Downloads an image, extracts text and image features, and returns them."""
@@ -187,8 +203,5 @@ def process_image(url):
         return None, None
     finally:
         # Always clean up in a finally block
-        if image_path and os.path.exists(image_path):
-            try:
-                cleanup_image(image_path)
-            except Exception as e:
-                print(f"Error during cleanup: {e}")
+        if image_path:
+            cleanup_image(image_path)

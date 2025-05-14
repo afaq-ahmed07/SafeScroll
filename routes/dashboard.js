@@ -47,24 +47,33 @@ function calculateImageStatistics(images) {
 router.post('/', authenticateToken, (req, res) => {
     const { images } = req.body;
     if (images && Array.isArray(images)) {
-        // Create a Set to track unique URLs
-        const uniqueUrls = new Set();
+        // Create a Map to track earliest timestamps for each URL
+        const urlTimestamps = new Map();
+        const earliestImages = [];
         
-        // Filter out duplicate images
-        const uniqueImages = images.filter((image) => {
-            if (uniqueUrls.has(image.url)) {
-                return false; // Skip if URL is already in Set
+        // Process each image and keep the earliest one for each URL
+        images.forEach((image) => {
+            const { url, timestamp } = image;
+            const existingTimestamp = urlTimestamps.get(url);
+            
+            // If URL is not in Map or current timestamp is earlier, update it
+            if (!existingTimestamp || timestamp < existingTimestamp) {
+                urlTimestamps.set(url, timestamp);
+                // Remove any existing image with this URL
+                const index = earliestImages.findIndex(img => img.url === url);
+                if (index !== -1) {
+                    earliestImages.splice(index, 1);
+                }
+                earliestImages.push(image);
             }
-            uniqueUrls.add(image.url);
-            return true;
         });
 
         // Sort images by timestamp in descending order
-        storedImages = uniqueImages.sort((a, b) => b.timestamp - a.timestamp);
+        storedImages = earliestImages.sort((a, b) => b.timestamp - a.timestamp);
         
         res.json({ 
             success: true,
-            message: `Successfully processed ${uniqueImages.length} unique images out of ${images.length}`
+            message: `Successfully processed ${earliestImages.length} unique images out of ${images.length}`
         });
     } else {
         res.status(400).json({ success: false, message: 'Invalid image data' });

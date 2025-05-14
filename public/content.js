@@ -263,9 +263,9 @@
         console.log("New processed images:", validResults); // Debug log
 
         if (validResults.length > 0 && isSubscribed) {
-            // validResults.forEach(result => imageBatch.add(result));
-            // console.log("Sending images to back")
-            // sendBatchedImages();
+            validResults.forEach(result => imageBatch.add(result));
+            console.log("Sending images to back")
+            sendBatchedImages();
         }
     }
 
