@@ -3,6 +3,9 @@
 A system that detects potentially harmful or inappropriate images and applies blurring to them.
 ![image](https://github.com/user-attachments/assets/32a7c7b9-e502-492e-86ce-e397573c188c)
 
+![image](https://github.com/user-attachments/assets/41a71a30-d16b-4784-8be0-acdda9139d7d)
+
+
 
 https://github.com/user-attachments/assets/a538c049-8fa3-41e1-afaa-10522e4692b3
 
