@@ -11,10 +11,6 @@ https://github.com/user-attachments/assets/a538c049-8fa3-41e1-afaa-10522e4692b3
 https://github.com/user-attachments/assets/d3476de8-cead-4be4-ab4a-f27675737c00
 
 
-<video controls src="Extension.mp4" title="Extension"></video>
-
-
-
 ## Features
 - Detects potentially harmful or inappropriate content in images
 - Uses deep learning models for image and text analysis
