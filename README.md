@@ -1,9 +1,12 @@
 # SafeScroll - Image Blur Detection System
 
 A system that detects potentially harmful or inappropriate images and applies blurring to them.
+![image](https://github.com/user-attachments/assets/32a7c7b9-e502-492e-86ce-e397573c188c)
+
+
+https://github.com/user-attachments/assets/ed1133c3-c54b-49ea-8555-c340c3e7897c
 
 ## Features
-
 - Detects potentially harmful or inappropriate content in images
 - Uses deep learning models for image and text analysis
 - Provides real-time image processing
