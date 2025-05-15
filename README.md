@@ -4,11 +4,13 @@ A system that detects potentially harmful or inappropriate images and applies bl
 ![image](https://github.com/user-attachments/assets/32a7c7b9-e502-492e-86ce-e397573c188c)
 
 
-https://github.com/user-attachments/assets/ed1133c3-c54b-49ea-8555-c340c3e7897c
-<video width="600" controls>
-  <source src="Extension_Image_Grabbing.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://github.com/user-attachments/assets/a538c049-8fa3-41e1-afaa-10522e4692b3
+
+
+
+https://github.com/user-attachments/assets/d3476de8-cead-4be4-ab4a-f27675737c00
+
+
 
 ## Features
 - Detects potentially harmful or inappropriate content in images
