@@ -1,50 +1,117 @@
-# SafeScroll
+# SafeScroll - Image Blur Detection System
 
-**SafeScroll** is a browser extension designed to detect and blur hateful memes on webpages. The extension analyzes images on a page, sends them to a machine learning model to flag potential hateful content, and prevents flagged memes from loading, replacing them with a blur effect.
+A system that detects potentially harmful or inappropriate images and applies blurring to them.
 
 ## Features
 
-- **Hateful Meme Detection**: Automatically scans images on webpages, detecting potentially hateful memes.
-- **Blur Blocking**: Blurs flagged images to prevent exposure to unwanted content.
-- **Subscription & Dashboard**: Paid users have access to a dashboard that displays blocked memes within a specific timeframe.
-- **Sign In/Sign Up Support**: Users can create accounts, sign in, and subscribe for enhanced functionality.
-- **Seamless DOM Integration**: Integrates directly with the DOM to intercept and analyze image content on each page.
+- Detects potentially harmful or inappropriate content in images
+- Uses deep learning models for image and text analysis
+- Provides real-time image processing
+- Easy to integrate into existing applications
 
-## Technology Stack
+## Prerequisites
 
-- **Backend**: Node.js with EJS for rendering views
-- **Frontend**: HTML, CSS, and JavaScript
-- **Machine Learning Model**: Deployed on the backend to classify images as hateful or safe
-- **Browser Extension API**: Manifest v3 for Chrome extensions
+- Python 3.8 or higher
+- Node.js (for frontend development)
+- Git
 
-## Installation and Setup
+## Installation
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-username/safescroll-extension.git
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/afaq-ahmed07/SafeScroll.git
+cd SafeScroll
+```
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+2. Install Python dependencies:
+```bash
+# Navigate to python-model directory
+cd python-model
+pip install -r requirements.txt
+```
 
-3. **Build the extension**:
-   ```bash
-   npm run build
-   ```
+3. Set up environment variables:
+```bash
+cd ..
+# Create a .env file (example provided in .env.example)
+touch .env
+```
 
-4. **Load the extension** in Chrome:
-   - Open Chrome and go to `chrome://extensions/`.
-   - Enable "Developer mode" (toggle in the upper right).
-   - Click "Load unpacked" and select the `build` folder.
+4. Build the frontend:
+```bash
+# Navigate to public directory
+cd public
+npm install
+npm run build
+```
 
-5. **Run the server**:
-   ```bash
-   npm start
-   ```
+## Running the Application
+
+1. Start the Python backend:
+```bash
+cd python-model
+python app.py
+```
+The backend will run on http://localhost:5000
+
+2. Start the frontend (optional):
+```bash
+cd ../public
+npm start
+```
+The frontend will run on http://localhost:3000
+
+## API Endpoints
+
+### Image Prediction
+```http
+POST /predict
+```
+
+Request Body:
+```json
+{
+    "image_url": "URL_TO_IMAGE"
+}
+```
+
+Response:
+```json
+{
+    "prediction": 0,  # 0 for safe, 1 for unsafe
+    "confidence": 0.95
+}
+```
+
+## Project Structure
+
+```
+SafeScroll/
+├── python-model/          # Backend Python code
+│   ├── app.py           # Flask server
+│   ├── predict_DualBranch.py  # Prediction model
+│   ├── fe.py            # Feature extraction
+│   └── requirements.txt  # Python dependencies
+├── public/              # Frontend code
+│   ├── background.js    # Browser extension background script
+│   └── content.js       # Browser extension content script
+└── .env                 # Environment variables
+```
 
 ## Usage
 
-After installation, SafeScroll will automatically scan webpages for potentially hateful memes. If an image is flagged, it will be blurred. Users can sign in or sign up, subscribe, and access a dashboard of blocked memes (available to paid subscribers).
+1. The system can be used as a standalone API service
+2. It can be integrated into browser extensions
+3. It can be used to process images in batch mode
 
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
