@@ -1,4 +1,13 @@
-# SafeScroll - Image Blur Detection System
+# SafeScroll  
+
+**SafeScroll** is a browser extension developed as a **Final Year Project** by three undergraduate students:  
+
+**Wajee Ul Hassan**  
+**Om Parkash**  
+**Afaq Ahmed**  
+
+This project represents the **implementation of the research conducted in our undergraduate thesis**, focusing on detecting and mitigating hateful memes on social media platforms to promote a safer digital environment.
+# Image Blur Detection System
 
 A system that detects potentially harmful or inappropriate images and applies blurring to them.
 ![image](https://github.com/user-attachments/assets/32a7c7b9-e502-492e-86ce-e397573c188c)
