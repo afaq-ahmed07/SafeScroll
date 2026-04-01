@@ -1,137 +1,145 @@
-# SafeScroll  
+# SafeScroll
 
-**SafeScroll** is a browser extension developed as a **Final Year Project** by three undergraduate students:  
+SafeScroll is a browser extension and companion backend that detects potentially harmful or inappropriate images (e.g., hateful memes) and applies on-the-fly blurring to create a safer browsing experience.
 
-**Wajee Ul Hassan**  
-**Om Parkash**  
-**Afaq Ahmed**  
+### Authors
+- Wajee Ul Hassan
+- Om Parkash
+- Afaq Ahmed
 
-This project represents the **implementation of the research conducted in our undergraduate thesis**, focusing on detecting and mitigating hateful memes on social media platforms to promote a safer digital environment.
-# Image Blur Detection System
+### Contribution highlights
+- Model research and implementation: Wajee Ul Hassan, Om Parkash
+- Extension and backend integration: Afaq Ahmed (with collaboration across the team)
 
+---
+
+## Image Blur Detection System
 A system that detects potentially harmful or inappropriate images and applies blurring to them.
+
 ![image](https://github.com/user-attachments/assets/32a7c7b9-e502-492e-86ce-e397573c188c)
 
 ![image](https://github.com/user-attachments/assets/41a71a30-d16b-4784-8be0-acdda9139d7d)
 
-
-
 https://github.com/user-attachments/assets/a538c049-8fa3-41e1-afaa-10522e4692b3
-
-
 
 https://github.com/user-attachments/assets/d3476de8-cead-4be4-ab4a-f27675737c00
 
+---
 
 ## Features
 - Detects potentially harmful or inappropriate content in images
-- Uses deep learning models for image and text analysis
-- Provides real-time image processing
-- Easy to integrate into existing applications
+- Deep learning models for multimodal (image/text) analysis
+- Real-time, in-page image processing via browser extension
+- Simple Python REST API for predictions
+- Drop-in integration with existing web experiences
+
+## Tech stack
+- Browser extension (content/background scripts + UI)
+- Node.js backend (Express + EJS views) for app flows and integration
+- Python model server (Flask) hosting deep learning models
+- MongoDB + Mongoose for persistence (where applicable)
 
 ## Prerequisites
-
-- Python 3.8 or higher
-- Node.js (for frontend development)
+- Python 3.8+
+- Node.js 18+ and npm
 - Git
 
 ## Installation
 
-1. Clone the repository:
+1) Clone the repository
 ```bash
-git clone https://github.com/afaq-ahmed07/SafeScroll.git
+git clone https://github.com/omi1215/SafeScroll.git
 cd SafeScroll
 ```
 
-2. Install Python dependencies:
+2) Python model server dependencies
 ```bash
-# Navigate to python-model directory
 cd python-model
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
+3) Node.js app dependencies (root)
 ```bash
 cd ..
-# Create a .env file (example provided in .env.example)
-touch .env
+npm install
 ```
 
-4. Build the frontend:
+4) (Optional) Build browser extension assets
 ```bash
-# Navigate to public directory
-cd public
-npm install
 npm run build
 ```
 
-## Running the Application
+## Running the application
 
-1. Start the Python backend:
+Run the Python model server (Flask):
 ```bash
 cd python-model
 python app.py
 ```
-The backend will run on http://localhost:5000
+By default serves on http://localhost:5000
 
-2. Start the frontend (optional):
+Run the Node.js app (serves pages and extension flows):
 ```bash
-cd ../public
+cd ..
 npm start
 ```
-The frontend will run on http://localhost:3000
+By default serves on http://localhost:3000 (depending on your setup)
 
-## API Endpoints
+Load the extension (manual step):
+- Open your Chromium-based browser → Extensions → Enable Developer Mode
+- Load unpacked → select the `public` directory
 
-### Image Prediction
-```http
-POST /predict
-```
+## API (model server)
 
-Request Body:
+### POST /predict
+Request
 ```json
 {
-    "image_url": "URL_TO_IMAGE"
+  "image_url": "URL_TO_IMAGE"
 }
 ```
 
-Response:
+Response (example)
 ```json
 {
-    "prediction": 0,  # 0 for safe, 1 for unsafe
-    "confidence": 0.95
+  "prediction": 0,
+  "confidence": 0.95
 }
 ```
+Where `prediction` is 0 for safe and 1 for unsafe.
 
-## Project Structure
+## Project structure
 
 ```
 SafeScroll/
-├── python-model/          # Backend Python code
-│   ├── app.py           # Flask server
-│   ├── predict_DualBranch.py  # Prediction model
-│   ├── fe.py            # Feature extraction
-│   └── requirements.txt  # Python dependencies
-├── public/              # Frontend code
-│   ├── background.js    # Browser extension background script
-│   └── content.js       # Browser extension content script
-└── .env                 # Environment variables
+├── python-model/                 # Python (Flask) model server
+│   ├── app.py                    # Entrypoint
+│   ├── predict_DualBranch.py     # Dual-branch prediction logic
+│   ├── predict_SBNET.py          # Alternative model path
+│   ├── fe.py                     # Feature extraction utilities
+│   ├── DualBranch/               # Weights for dual-branch model
+│   └── SBNET/                    # Weights for SBNet model
+├── public/                       # Browser extension (content/background, UI)
+│   ├── background.js
+│   ├── content.js
+│   ├── popup.html / popup.js / popup.css
+│   └── css/, js/, assets/...
+├── views/                        # EJS templates (Node app)
+├── routes/                       # Express routes
+├── middlewares/                  # Express middlewares
+├── index.js                      # Node.js server
+└── build.js                      # Build script for extension assets
 ```
 
-## Usage
-
-1. The system can be used as a standalone API service
-2. It can be integrated into browser extensions
-3. It can be used to process images in batch mode
+## Acknowledgements
+This implementation builds on our undergraduate research into hateful meme detection and safe content presentation. Many thanks to teammates and reviewers who contributed feedback and evaluation.
 
 ## Contributing
-
 1. Fork the repository
-2. Create your feature branch
+2. Create a feature branch
 3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+4. Push to your fork
+5. Open a Pull Request
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT — see `LICENSE` for details.
