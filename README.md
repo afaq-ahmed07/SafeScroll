@@ -20,9 +20,11 @@ A system that detects potentially harmful or inappropriate images and applies bl
 
 ![image](https://github.com/user-attachments/assets/41a71a30-d16b-4784-8be0-acdda9139d7d)
 
-https://github.com/user-attachments/assets/a538c049-8fa3-41e1-afaa-10522e4692b3
 
-https://github.com/user-attachments/assets/d3476de8-cead-4be4-ab4a-f27675737c00
+
+https://github.com/user-attachments/assets/c3b02af8-ebe0-49df-8a24-8062aca762e3
+
+
 
 ---
 
@@ -48,7 +50,7 @@ https://github.com/user-attachments/assets/d3476de8-cead-4be4-ab4a-f27675737c00
 
 1) Clone the repository
 ```bash
-git clone https://github.com/omi1215/SafeScroll.git
+git clone https://github.com/afaq-ahmed07/SafeScroll
 cd SafeScroll
 ```
 
