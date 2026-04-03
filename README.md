@@ -50,7 +50,7 @@ Longer walkthrough (file in repo): [Extension.mp4](Extension.mp4)
 
 1) Clone the repository
 ```bash
-git clone https://github.com/omi1215/SafeScroll.git
+git clone https://github.com/afaq-ahmed07/SafeScroll
 cd SafeScroll
 ```
 
