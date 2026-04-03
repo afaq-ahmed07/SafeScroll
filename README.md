@@ -16,13 +16,21 @@ SafeScroll is a browser extension and companion backend that detects potentially
 ## Image Blur Detection System
 A system that detects potentially harmful or inappropriate images and applies blurring to them.
 
+### Screenshots
 ![image](https://github.com/user-attachments/assets/32a7c7b9-e502-492e-86ce-e397573c188c)
 
 ![image](https://github.com/user-attachments/assets/41a71a30-d16b-4784-8be0-acdda9139d7d)
 
-https://github.com/user-attachments/assets/a538c049-8fa3-41e1-afaa-10522e4692b3
+### Demo videos
 
-https://github.com/user-attachments/assets/d3476de8-cead-4be4-ab4a-f27675737c00
+<video src="https://github.com/user-attachments/assets/a538c049-8fa3-41e1-afaa-10522e4692b3" controls width="100%"></video>
+
+<video src="https://github.com/user-attachments/assets/d3476de8-cead-4be4-ab4a-f27675737c00" controls width="100%"></video>
+
+### Extension walkthrough (file in this repo)
+<video src="./Extension.mp4" controls width="100%" preload="metadata"></video>
+
+If the inline player does not load in your browser, open the file on GitHub: [`Extension.mp4`](./Extension.mp4).
 
 ---
 
