@@ -24,7 +24,7 @@ A system that detects potentially harmful or inappropriate images and applies bl
 
 https://github.com/user-attachments/assets/c3b02af8-ebe0-49df-8a24-8062aca762e3
 
-
+Longer walkthrough (file in repo): [Extension.mp4](Extension.mp4)
 
 ---
 
